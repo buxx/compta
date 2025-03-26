@@ -21,13 +21,27 @@ fn main() {
     println!("# ➡️  Par sous catégories");
     println!();
     print_totals(&raw, debit_index, sub_category_index, &sub_categories);
+
+    println!();
+    println!("# 🔥  Dépenses/Entrées >= {:>.2}", SIGNIFICANT);
+    println!();
+
+    
+    let mut significatives = raw.lines().skip(1)
+        .filter_map(|line| {
+            let debit_str = line.split(";").nth(debit_index).unwrap();
+            if !debit_str.trim().is_empty() {
+                Some((line, debit_str.replace(",", ".").parse::<f32>().unwrap()))
+            } else {
+                None
+            }
+        }).filter(|(_, v)| (v.abs() * 100.) as i32 >= SIGNIFICANT as i32).collect::<Vec<(&str, f32)>>();
+    significatives.sort_by(|a, b| ((a.1 * 1000.) as i32).cmp(&((b.1 * 1000.) as i32)));
+    for (line, _v) in significatives {
+        println!("* `{}`", line)
+    }
 }
 
-struct Item {
-    label: String,
-    sub_category: String,
-    value: f32,
-}
 
 fn find_index(headers: &[&str], target: &str) -> usize {
     headers.iter().position(|&h| h == target).expect("Header not found")
@@ -48,7 +62,6 @@ fn extract_unique_values(raw: &str, index: usize) -> Vec<String> {
 
 fn print_totals(raw: &str, debit_index: usize, index: usize, values: &[String]) {
     let mut totals = vec![];
-    // let mut significant = vec![];
 
     for value in values {
         let total: f32 = raw.lines()
@@ -73,5 +86,4 @@ fn print_totals(raw: &str, debit_index: usize, index: usize, values: &[String]) 
     for (name, total) in totals {
         println!("|{}|{:>.2}|", name, total.abs());
     }
-
 }
