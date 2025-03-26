@@ -1,6 +1,6 @@
 use std::{collections::HashSet, fs};
 
-const SIGNIFICANT: f32 = 250.0;
+const SIGNIFICANT: f32 = 175.0;
 
 fn main() {
     let raw = fs::read_to_string("data.csv").expect("Failed to read file");
@@ -35,10 +35,13 @@ fn main() {
             } else {
                 None
             }
-        }).filter(|(_, v)| (v.abs() * 100.) as i32 >= SIGNIFICANT as i32).collect::<Vec<(&str, f32)>>();
+        }).filter(|(_, v)| (v.abs() * 100.) as i32 >= (SIGNIFICANT * 100.) as i32).collect::<Vec<(&str, f32)>>();
     significatives.sort_by(|a, b| ((a.1 * 1000.) as i32).cmp(&((b.1 * 1000.) as i32)));
+    
+    println!("|{}|", raw.lines().next().unwrap().replace(";", "|"));
+    println!("|{}|", raw.lines().next().unwrap().split(";").map(|_| "-").collect::<Vec<&str>>().join("|"));
     for (line, _v) in significatives {
-        println!("* `{}`", line)
+        println!("|{}|", line.replace(";", "|"))
     }
 }
 
