@@ -60,7 +60,8 @@ impl eframe::App for MyApp {
             self.file_dialog.update(ctx);
 
             if let Some(path) = self.file_dialog.take_picked() {
-                let raw = fs::read_to_string(path).expect("Failed to read file");
+                let raw = fs::read(path).expect("Failed to read file");
+                let raw = String::from_utf8_lossy(&raw).to_string();
                 self.lines = Some(raw.into_lines().unwrap());
                 self.tree = dock();
             }
