@@ -1,3 +1,4 @@
+use chrono::{Datelike, Duration};
 use itertools::Itertools;
 use thiserror::Error;
 
@@ -94,12 +95,75 @@ impl TryIntoLines for String {
             .sorted_by_key(|(_, _, v)| (v * 100.) as i32)
             .collect();
 
+        let dates = lines
+            .iter()
+            .map(|l| {
+                let mut splitted = l.date_raw().split('/');
+                let day = splitted.next().unwrap().parse::<u32>().unwrap();
+                let month = splitted.next().unwrap().parse::<u32>().unwrap();
+                let year = splitted.next().unwrap().parse::<i32>().unwrap();
+                chrono::NaiveDate::from_ymd_opt(year, month, day).unwrap()
+            })
+            .collect::<Vec<chrono::NaiveDate>>();
+        let lower_date = dates
+            .iter()
+            .sorted()
+            .collect::<Vec<&chrono::NaiveDate>>()
+            .first()
+            .copied()
+            .unwrap()
+            .clone();
+        let higher_date = dates
+            .iter()
+            .sorted()
+            .collect::<Vec<&chrono::NaiveDate>>()
+            .last()
+            .copied()
+            .unwrap()
+            .clone();
+
+        let mut categories_histogram = vec![];
+        for category in &categories {
+            let category_lines = lines
+                .iter()
+                .filter(|l| l.categorie() == category)
+                .collect::<Vec<&Line>>();
+
+            let mut index = 0;
+            let mut values = vec![];
+            let mut current_date =
+                chrono::NaiveDate::from_ymd_opt(lower_date.year(), lower_date.month(), 1).unwrap();
+            while current_date <= higher_date {
+                let category_month_total = category_lines
+                    .iter()
+                    .filter(|l| {
+                        let mut splitted = l.date_raw().split('/');
+                        let _ = splitted.next().unwrap().parse::<u32>().unwrap();
+                        let month = splitted.next().unwrap().parse::<u32>().unwrap();
+                        let year = splitted.next().unwrap().parse::<i32>().unwrap();
+                        current_date.year() == year && current_date.month() == month
+                    })
+                    .map(|l| l.credit().unwrap_or(0.0) + l.debit().unwrap_or(0.0))
+                    .sum::<f32>();
+
+                values.push([(index + 1) as f64, category_month_total as f64]);
+
+                current_date = current_date
+                    .checked_add_months(chrono::Months::new(1))
+                    .unwrap();
+                index += 1;
+            }
+
+            categories_histogram.push((category.clone(), values));
+        }
+
         Ok(Lines::new(
             lines,
             categories,
             sub_categories,
             categories_totals,
             sub_categories_total,
+            categories_histogram,
         ))
     }
 }

@@ -53,6 +53,7 @@ pub struct Lines {
     sub_categories: Vec<(String, String)>,
     categories_totals: Vec<(String, f32)>,
     sub_categories_total: Vec<(String, String, f32)>,
+    categories_histogram: Vec<(String, Vec<[f64; 2]>)>,
 }
 
 impl Lines {
@@ -74,5 +75,9 @@ impl Lines {
 
     pub fn sub_categories_total(&self) -> &[(String, String, f32)] {
         &self.sub_categories_total
+    }
+
+    pub fn categories_histogram(&self) -> &Vec<(String, Vec<[f64; 2]>)> {
+        &self.categories_histogram
     }
 }

@@ -1,4 +1,5 @@
 use eframe::egui;
+use egui_plot::{Legend, Line, Plot, PlotPoints};
 
 use crate::{app::scale_buttons, line::Lines};
 
@@ -20,6 +21,16 @@ pub fn render(ui: &mut egui::Ui, lines: &Lines) -> Vec<Effect> {
                 ui.end_row();
             }
         });
+
+    ui.separator();
+
+    let plot = Plot::new("Historique").legend(Legend::default());
+
+    let _ = plot.show(ui, |plot_ui| {
+        for (category, values) in lines.categories_histogram() {
+            plot_ui.line(Line::new(category, PlotPoints::from(values.clone())));
+        }
+    });
 
     effects
 }
