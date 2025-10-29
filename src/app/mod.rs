@@ -106,7 +106,6 @@ impl eframe::App for MyApp {
                             self.selected_sub_category = None;
                         }
                         Effect::SelectSubCategory(sub_category) => {
-                            dbg!(&sub_category);
                             self.selected_category = None;
                             self.selected_sub_category = sub_category;
                         }

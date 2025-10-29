@@ -121,6 +121,7 @@ impl TryIntoLines for String {
             .copied()
             .unwrap()
             .clone();
+        let mut months = 1;
 
         let mut categories_histogram = vec![];
         for category in &categories {
@@ -155,6 +156,7 @@ impl TryIntoLines for String {
             }
 
             categories_histogram.push((category.clone(), values));
+            months = index;
         }
 
         Ok(Lines::new(
@@ -164,6 +166,7 @@ impl TryIntoLines for String {
             categories_totals,
             sub_categories_total,
             categories_histogram,
+            months,
         ))
     }
 }
