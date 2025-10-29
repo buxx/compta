@@ -1,4 +1,5 @@
-use eframe::egui;
+use eframe::egui::{self, Frame, Vec2};
+use egui_plot::{Legend, Line, Plot, PlotPoints};
 
 use crate::{app::scale_buttons, line::Lines};
 
@@ -26,6 +27,20 @@ pub fn render(ui: &mut egui::Ui, lines: &Lines) -> Vec<Effect> {
                     }
                 }
             });
+
+        ui.separator();
+
+        Frame::default().show(ui, |ui| {
+            ui.set_min_size(Vec2::new(ui.available_width(), 350.0));
+            let plot = Plot::new(format!("Historique {category}")).legend(Legend::default());
+            let x = plot.show(ui, |plot_ui| {
+                for (category_, sub_category, _, values) in lines.sous_categories_histogram() {
+                    if category_ == category {
+                        plot_ui.line(Line::new(sub_category, PlotPoints::from(values.clone())));
+                    }
+                }
+            });
+        });
 
         ui.separator();
         ui.add_space(20.0);

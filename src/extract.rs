@@ -165,6 +165,52 @@ impl TryIntoLines for String {
             months = index;
         }
 
+        let mut sous_categories_histogram = vec![];
+        for (category, sub_category) in &sub_categories {
+            let sub_category_lines = lines
+                .iter()
+                .filter(|l| l.categorie() == category && l.sous_categorie() == sub_category)
+                .collect::<Vec<&Line>>();
+
+            let mut index = 0;
+            let mut values = vec![];
+            let mut current_date =
+                chrono::NaiveDate::from_ymd_opt(lower_date.year(), lower_date.month(), 1).unwrap();
+            while current_date <= higher_date {
+                let sub_category_month_total = sub_category_lines
+                    .iter()
+                    .filter(|l| {
+                        let mut splitted = l.date_raw().split('/');
+                        let _ = splitted.next().unwrap().parse::<u32>().unwrap();
+                        let month = splitted.next().unwrap().parse::<u32>().unwrap();
+                        let year = splitted.next().unwrap().parse::<i32>().unwrap();
+                        current_date.year() == year && current_date.month() == month
+                    })
+                    .map(|l| l.credit().unwrap_or(0.0) + l.debit().unwrap_or(0.0))
+                    .sum::<f32>();
+
+                values.push([(index + 1) as f64, sub_category_month_total as f64]);
+
+                current_date = current_date
+                    .checked_add_months(chrono::Months::new(1))
+                    .unwrap();
+                index += 1;
+            }
+
+            let positive = values
+                .iter()
+                .map(|[_, v]| v)
+                .sum::<f64>()
+                .is_sign_positive();
+
+            sous_categories_histogram.push((
+                category.clone(),
+                sub_category.clone(),
+                positive,
+                values,
+            ));
+        }
+
         Ok(Lines::new(
             lines,
             categories,
@@ -172,6 +218,7 @@ impl TryIntoLines for String {
             categories_totals,
             sub_categories_total,
             categories_histogram,
+            sous_categories_histogram,
             months,
             true,
         ))

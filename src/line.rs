@@ -54,6 +54,7 @@ pub struct Lines {
     categories_totals: Vec<(String, f32)>,
     sub_categories_total: Vec<(String, String, f32)>,
     categories_histogram: Vec<(String, bool, Vec<[f64; 2]>)>,
+    sous_categories_histogram: Vec<(String, String, bool, Vec<[f64; 2]>)>,
     months: usize,
     pub categories_histogram_display_expenses_only: bool,
 }
@@ -81,6 +82,10 @@ impl Lines {
 
     pub fn categories_histogram(&self) -> &Vec<(String, bool, Vec<[f64; 2]>)> {
         &self.categories_histogram
+    }
+
+    pub fn sous_categories_histogram(&self) -> &Vec<(String, String, bool, Vec<[f64; 2]>)> {
+        &self.sous_categories_histogram
     }
 
     pub fn months(&self) -> usize {
