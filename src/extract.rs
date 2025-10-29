@@ -1,4 +1,4 @@
-use chrono::{Datelike, Duration};
+use chrono::Datelike;
 use itertools::Itertools;
 use thiserror::Error;
 
@@ -155,7 +155,13 @@ impl TryIntoLines for String {
                 index += 1;
             }
 
-            categories_histogram.push((category.clone(), values));
+            let positive = values
+                .iter()
+                .map(|[_, v]| v)
+                .sum::<f64>()
+                .is_sign_positive();
+
+            categories_histogram.push((category.clone(), positive, values));
             months = index;
         }
 
@@ -167,6 +173,7 @@ impl TryIntoLines for String {
             sub_categories_total,
             categories_histogram,
             months,
+            true,
         ))
     }
 }

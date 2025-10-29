@@ -76,7 +76,7 @@ impl eframe::App for MyApp {
                 self.start_from = None;
             }
 
-            if let Some(lines) = &self.lines {
+            if let Some(lines) = &mut self.lines {
                 let mut effects: Vec<Effect> = vec![];
 
                 DockArea::new(&mut self.tree)
@@ -128,7 +128,7 @@ enum Tab {
 
 #[derive(Constructor)]
 struct TabViewer<'a> {
-    lines: &'a Lines,
+    lines: &'a mut Lines,
     messages: &'a mut Vec<Effect>,
     selected_category: &'a Option<String>,
     selected_sub_category: &'a Option<String>,
@@ -144,7 +144,7 @@ impl egui_dock::TabViewer for TabViewer<'_> {
 
     fn ui(&mut self, ui: &mut egui::Ui, tab: &mut Self::Tab) {
         self.messages.extend(match tab {
-            Tab::Categories => categories::render(ui, self.lines),
+            Tab::Categories => categories::render(ui, &mut self.lines),
             Tab::SubCategories => sub_categories::render(ui, self.lines),
             Tab::Lines => lines::render(
                 ui,
