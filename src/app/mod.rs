@@ -1,4 +1,4 @@
-use std::fs;
+use std::{fs, path::PathBuf};
 
 use derive_more::{Constructor, Display};
 use effect::Effect;
@@ -14,6 +14,7 @@ pub mod sub_categories;
 use crate::{extract::TryIntoLines, line::Lines};
 
 pub struct MyApp {
+    start_from: Option<PathBuf>,
     file_dialog: FileDialog,
     lines: Option<Lines>,
     scale_factor: f32,
@@ -27,9 +28,10 @@ fn dock() -> DockState<Tab> {
     DockState::new(vec![Tab::Categories, Tab::SubCategories, Tab::Lines])
 }
 
-impl Default for MyApp {
-    fn default() -> Self {
+impl MyApp {
+    pub fn new(start_from: Option<PathBuf>) -> Self {
         Self {
+            start_from,
             file_dialog: Default::default(),
             lines: Default::default(),
             scale_factor: 1.5,
@@ -64,6 +66,14 @@ impl eframe::App for MyApp {
                 let raw = String::from_utf8_lossy(&raw).to_string();
                 self.lines = Some(raw.into_lines().unwrap());
                 self.tree = dock();
+            }
+
+            if let Some(path) = &self.start_from {
+                let raw = fs::read(path).expect("Failed to read file");
+                let raw = String::from_utf8_lossy(&raw).to_string();
+                self.lines = Some(raw.into_lines().unwrap());
+                self.tree = dock();
+                self.start_from = None;
             }
 
             if let Some(lines) = &self.lines {
