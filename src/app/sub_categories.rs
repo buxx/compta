@@ -5,7 +5,7 @@ use crate::{app::scale_buttons, line::Lines};
 
 use super::effect::Effect;
 
-pub fn render(ui: &mut egui::Ui, lines: &Lines) -> Vec<Effect> {
+pub fn render(ui: &mut egui::Ui, lines: &mut Lines) -> Vec<Effect> {
     let mut effects = vec![];
     effects.extend(scale_buttons(ui));
 

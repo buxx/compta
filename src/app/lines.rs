@@ -6,7 +6,7 @@ use super::effect::Effect;
 
 pub fn render<'a>(
     ui: &mut egui::Ui,
-    lines: &Lines,
+    lines: &mut Lines,
     selected_category: &'a Option<String>,
     selected_sub_category: &'a Option<String>,
     filter_text: &'a str,

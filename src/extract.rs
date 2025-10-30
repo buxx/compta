@@ -5,14 +5,14 @@ use thiserror::Error;
 use crate::line::{Line, Lines};
 
 pub trait TryIntoLines {
-    fn into_lines(self) -> Result<Lines, TryIntoLinesError>;
+    fn into_lines(self, name: String) -> Result<Lines, TryIntoLinesError>;
 }
 
 #[derive(Debug, Error)]
 pub enum TryIntoLinesError {}
 
 impl TryIntoLines for String {
-    fn into_lines(self) -> Result<Lines, TryIntoLinesError> {
+    fn into_lines(self, name: String) -> Result<Lines, TryIntoLinesError> {
         let mut lines = vec![];
 
         for line in self.lines().skip(1) {
@@ -211,8 +211,50 @@ impl TryIntoLines for String {
             ));
         }
 
+        let mut recurring = vec![];
+
+        for line in &lines {
+            let mut found_counter = 0;
+            let mut current_date =
+                chrono::NaiveDate::from_ymd_opt(lower_date.year(), lower_date.month(), 1).unwrap();
+            while current_date <= higher_date {
+                let month_lines = lines
+                    .iter()
+                    .filter(|l| {
+                        let mut splitted = l.date_raw().split('/');
+                        let _ = splitted.next().unwrap().parse::<u32>().unwrap();
+                        let month = splitted.next().unwrap().parse::<u32>().unwrap();
+                        let year = splitted.next().unwrap().parse::<i32>().unwrap();
+                        current_date.year() == year && current_date.month() == month
+                    })
+                    .collect::<Vec<&Line>>();
+
+                if !month_lines
+                    .iter()
+                    .filter(|l| {
+                        l.libelle_simplifie() == line.libelle_simplifie()
+                            && l.debit() == line.debit()
+                            && l.credit() == line.credit()
+                    })
+                    .collect::<Vec<&&Line>>()
+                    .is_empty()
+                {
+                    found_counter += 1;
+                }
+                current_date = current_date
+                    .checked_add_months(chrono::Months::new(1))
+                    .unwrap();
+            }
+
+            if found_counter == months {
+                recurring.push(line.clone())
+            }
+        }
+
         Ok(Lines::new(
+            name,
             lines,
+            recurring,
             categories,
             sub_categories,
             categories_totals,

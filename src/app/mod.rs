@@ -8,7 +8,9 @@ use egui_file_dialog::FileDialog;
 
 pub mod categories;
 pub mod effect;
+pub mod home;
 pub mod lines;
+pub mod recurring;
 pub mod sub_categories;
 
 use crate::{extract::TryIntoLines, line::Lines};
@@ -25,7 +27,13 @@ pub struct MyApp {
 }
 
 fn dock() -> DockState<Tab> {
-    DockState::new(vec![Tab::Categories, Tab::SubCategories, Tab::Lines])
+    DockState::new(vec![
+        Tab::Home,
+        Tab::Categories,
+        Tab::SubCategories,
+        Tab::Lines,
+        Tab::Recurring,
+    ])
 }
 
 impl MyApp {
@@ -47,71 +55,70 @@ impl eframe::App for MyApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         ctx.set_zoom_factor(self.scale_factor);
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.with_layout(
-                Layout::centered_and_justified(egui::Direction::TopDown),
-                |ui| {
-                    ui.with_layout(Layout::top_down_justified(Align::Center), |ui| {
-                        if ui.button("Sélectionner un fichier").clicked() {
-                            self.file_dialog.pick_file();
-                        }
-                    });
-                },
-            );
-
+        egui::CentralPanel::default().show(ctx, |_ui| {
             self.file_dialog.update(ctx);
 
             if let Some(path) = self.file_dialog.take_picked() {
-                let raw = fs::read(path).expect("Failed to read file");
+                let raw = fs::read(&path).expect("Failed to read file");
                 let raw = String::from_utf8_lossy(&raw).to_string();
-                self.lines = Some(raw.into_lines().unwrap());
+                let name = path
+                    .file_stem()
+                    .map(|n| n.display().to_string())
+                    .unwrap_or("data.csv".to_string());
+                self.lines = Some(raw.into_lines(name).unwrap());
                 self.tree = dock();
             }
 
             if let Some(path) = &self.start_from {
                 let raw = fs::read(path).expect("Failed to read file");
                 let raw = String::from_utf8_lossy(&raw).to_string();
-                self.lines = Some(raw.into_lines().unwrap());
+                let name = path
+                    .file_stem()
+                    .map(|n| n.display().to_string())
+                    .unwrap_or("data.csv".to_string());
+                self.lines = Some(raw.into_lines(name).unwrap());
                 self.tree = dock();
                 self.start_from = None;
             }
 
-            if let Some(lines) = &mut self.lines {
-                let mut effects: Vec<Effect> = vec![];
+            let mut effects: Vec<Effect> = vec![];
 
-                DockArea::new(&mut self.tree)
-                    .show_close_buttons(false)
-                    .style(Style::from_egui(ctx.style().as_ref()))
-                    .show(
-                        ctx,
-                        &mut TabViewer::new(
-                            lines,
-                            &mut effects,
-                            &self.selected_category,
-                            &self.selected_sub_category,
-                            &self.filter_text,
-                        ),
-                    );
+            DockArea::new(&mut self.tree)
+                .show_close_buttons(false)
+                .style(Style::from_egui(ctx.style().as_ref()))
+                .show(
+                    ctx,
+                    &mut TabViewer::new(
+                        &mut self.lines,
+                        &mut self.file_dialog,
+                        &mut effects,
+                        &self.selected_category,
+                        &self.selected_sub_category,
+                        &self.filter_text,
+                    ),
+                );
 
-                while let Some(effect) = effects.pop() {
-                    match effect {
-                        Effect::IncreaseScale => {
-                            self.scale_factor *= 1.1;
-                        }
-                        Effect::DecreaseScale => {
-                            self.scale_factor /= 1.1;
-                        }
-                        Effect::SelectCategory(category) => {
-                            self.selected_category = category;
-                            self.selected_sub_category = None;
-                        }
-                        Effect::SelectSubCategory(sub_category) => {
-                            self.selected_category = None;
-                            self.selected_sub_category = sub_category;
-                        }
-                        Effect::SetFilterText(value) => {
-                            self.filter_text = value;
-                        }
+            while let Some(effect) = effects.pop() {
+                match effect {
+                    Effect::IncreaseScale => {
+                        self.scale_factor *= 1.1;
+                    }
+                    Effect::DecreaseScale => {
+                        self.scale_factor /= 1.1;
+                    }
+                    Effect::SelectCategory(category) => {
+                        self.selected_category = category;
+                        self.selected_sub_category = None;
+                    }
+                    Effect::SelectSubCategory(sub_category) => {
+                        self.selected_category = None;
+                        self.selected_sub_category = sub_category;
+                    }
+                    Effect::SetFilterText(value) => {
+                        self.filter_text = value;
+                    }
+                    Effect::ClearLines => {
+                        self.lines = None;
                     }
                 }
             }
@@ -121,14 +128,17 @@ impl eframe::App for MyApp {
 
 #[derive(Debug, Display)]
 enum Tab {
+    Home,
     Categories,
     SubCategories,
     Lines,
+    Recurring,
 }
 
 #[derive(Constructor)]
 struct TabViewer<'a> {
-    lines: &'a mut Lines,
+    lines: &'a mut Option<Lines>,
+    file_dialog: &'a mut FileDialog,
     messages: &'a mut Vec<Effect>,
     selected_category: &'a Option<String>,
     selected_sub_category: &'a Option<String>,
@@ -144,15 +154,41 @@ impl egui_dock::TabViewer for TabViewer<'_> {
 
     fn ui(&mut self, ui: &mut egui::Ui, tab: &mut Self::Tab) {
         self.messages.extend(match tab {
-            Tab::Categories => categories::render(ui, &mut self.lines),
-            Tab::SubCategories => sub_categories::render(ui, self.lines),
-            Tab::Lines => lines::render(
-                ui,
-                self.lines,
-                self.selected_category,
-                self.selected_sub_category,
-                self.filter_text,
-            ),
+            Tab::Home => home::render(ui, self.file_dialog, self.lines),
+            Tab::Categories => {
+                if let Some(lines) = self.lines {
+                    categories::render(ui, lines)
+                } else {
+                    vec![]
+                }
+            }
+            Tab::SubCategories => {
+                if let Some(lines) = self.lines {
+                    sub_categories::render(ui, lines)
+                } else {
+                    vec![]
+                }
+            }
+            Tab::Lines => {
+                if let Some(lines) = self.lines {
+                    lines::render(
+                        ui,
+                        lines,
+                        self.selected_category,
+                        self.selected_sub_category,
+                        self.filter_text,
+                    )
+                } else {
+                    vec![]
+                }
+            }
+            Tab::Recurring => {
+                if let Some(lines) = self.lines {
+                    recurring::render(ui, lines)
+                } else {
+                    vec![]
+                }
+            }
         });
     }
 }

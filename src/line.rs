@@ -1,6 +1,6 @@
 use derive_more::Constructor;
 
-#[derive(Debug, Constructor, PartialEq)]
+#[derive(Debug, Constructor, PartialEq, Clone)]
 pub struct Line {
     date_raw: String,
     libelle_simplifie: String,
@@ -48,7 +48,9 @@ impl Line {
 
 #[derive(Debug, Constructor)]
 pub struct Lines {
+    name: String,
     lines: Vec<Line>,
+    recurring: Vec<Line>,
     categories: Vec<String>,
     sub_categories: Vec<(String, String)>,
     categories_totals: Vec<(String, f32)>,
@@ -60,8 +62,16 @@ pub struct Lines {
 }
 
 impl Lines {
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     pub fn lines(&self) -> &[Line] {
         &self.lines
+    }
+
+    pub fn recurring(&self) -> &[Line] {
+        &self.recurring
     }
 
     pub fn categories(&self) -> &[String] {
