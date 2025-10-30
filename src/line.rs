@@ -1,4 +1,5 @@
 use derive_more::Constructor;
+use std::hash::{Hash, Hasher};
 
 #[derive(Debug, Constructor, PartialEq, Clone)]
 pub struct Line {
@@ -45,6 +46,21 @@ impl Line {
         &self.date_raw
     }
 }
+
+impl Hash for Line {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.date_raw.hash(state);
+        self.libelle_simplifie.hash(state);
+        self.libelle_operation.hash(state);
+        self.reference.hash(state);
+        self.categorie.hash(state);
+        self.sous_categorie.hash(state);
+        self.debit.map(|v| (v * 100.0) as i32).hash(state);
+        self.credit.map(|v| (v * 100.0) as i32).hash(state);
+    }
+}
+
+impl Eq for Line {}
 
 #[derive(Debug, Constructor)]
 pub struct Lines {

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use chrono::Datelike;
 use itertools::Itertools;
 use thiserror::Error;
@@ -250,6 +252,24 @@ impl TryIntoLines for String {
                 recurring.push(line.clone())
             }
         }
+
+        let mut recurring_: Vec<Line> = vec![];
+        for line in &recurring {
+            let already = recurring_
+                .iter()
+                .find(|l| {
+                    l.libelle_simplifie() == line.libelle_simplifie()
+                        && l.debit() == line.debit()
+                        && l.credit() == line.credit()
+                })
+                .is_some();
+
+            if !already {
+                recurring_.push(line.clone());
+            }
+        }
+
+        let recurring = recurring_;
 
         Ok(Lines::new(
             name,
