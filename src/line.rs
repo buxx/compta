@@ -77,6 +77,7 @@ pub struct Lines {
     sous_categories_histogram: Vec<(String, String, bool, Vec<[f64; 2]>)>,
     pub months: usize,
     pub recurring_months: usize,
+    pub recurring_approx: f32,
     pub categories_histogram_display_expenses_only: bool,
 }
 

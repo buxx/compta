@@ -215,6 +215,7 @@ impl TryIntoLines for String {
             ));
         }
 
+        let recurring_approx = 0.0;
         let mut lines = Lines::new(
             name,
             lower_date,
@@ -229,6 +230,7 @@ impl TryIntoLines for String {
             sous_categories_histogram,
             months,
             recurring_months,
+            recurring_approx,
             true,
         );
 
@@ -264,8 +266,16 @@ pub fn extract_recuring(lines: &Lines) -> Vec<Line> {
                 .iter()
                 .filter(|l| {
                     l.libelle_simplifie() == line.libelle_simplifie()
-                        && l.debit() == line.debit()
-                        && l.credit() == line.credit()
+                        && approx_eq_pct_ref(
+                            l.debit().unwrap_or(0.0),
+                            line.debit().unwrap_or(0.0),
+                            lines.recurring_approx,
+                        )
+                        && approx_eq_pct_ref(
+                            l.credit().unwrap_or(0.0),
+                            line.credit().unwrap_or(0.0),
+                            lines.recurring_approx,
+                        )
                 })
                 .collect::<Vec<&&Line>>()
                 .is_empty()
@@ -288,8 +298,16 @@ pub fn extract_recuring(lines: &Lines) -> Vec<Line> {
             .iter()
             .find(|l| {
                 l.libelle_simplifie() == line.libelle_simplifie()
-                    && l.debit() == line.debit()
-                    && l.credit() == line.credit()
+                    && approx_eq_pct_ref(
+                        l.debit().unwrap_or(0.0),
+                        line.debit().unwrap_or(0.0),
+                        lines.recurring_approx,
+                    )
+                    && approx_eq_pct_ref(
+                        l.credit().unwrap_or(0.0),
+                        line.credit().unwrap_or(0.0),
+                        lines.recurring_approx,
+                    )
             })
             .is_some();
 
@@ -299,6 +317,22 @@ pub fn extract_recuring(lines: &Lines) -> Vec<Line> {
     }
 
     recurring_
+}
+
+pub fn approx_eq_pct_ref(reference: f32, actual: f32, pct: f32) -> bool {
+    if reference.is_nan() || actual.is_nan() {
+        return false;
+    }
+    if reference.is_infinite() || actual.is_infinite() {
+        return reference == actual;
+    }
+
+    let ref_abs = reference.abs();
+    if ref_abs == 0.0 {
+        return (actual).abs() <= f32::EPSILON;
+    } // compare to tiny epsilon if reference is 0
+    let tol = ref_abs * pct;
+    (reference - actual).abs() <= tol
 }
 
 #[cfg(test)]

@@ -15,6 +15,13 @@ pub fn render<'a>(ui: &mut egui::Ui, lines: &mut Lines) -> Vec<Effect> {
         return vec![Effect::RecomputeRecurring];
     };
 
+    if ui
+        .add(egui::Slider::new(&mut lines.recurring_approx, 0.0..=100.0).suffix("%"))
+        .changed()
+    {
+        return vec![Effect::RecomputeRecurring];
+    };
+
     egui::Grid::new("lines").striped(true).show(ui, |ui| {
         for line in lines.recurring() {
             ui.label(line.date_raw());
