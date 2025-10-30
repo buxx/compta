@@ -65,15 +65,18 @@ impl Eq for Line {}
 #[derive(Debug, Constructor)]
 pub struct Lines {
     name: String,
+    pub lower_date: chrono::NaiveDate,
+    pub higher_date: chrono::NaiveDate,
     lines: Vec<Line>,
-    recurring: Vec<Line>,
+    pub recurring: Vec<Line>,
     categories: Vec<String>,
     sub_categories: Vec<(String, String)>,
     categories_totals: Vec<(String, f32)>,
     sub_categories_total: Vec<(String, String, f32)>,
     categories_histogram: Vec<(String, bool, Vec<[f64; 2]>)>,
     sous_categories_histogram: Vec<(String, String, bool, Vec<[f64; 2]>)>,
-    months: usize,
+    pub months: usize,
+    pub recurring_months: usize,
     pub categories_histogram_display_expenses_only: bool,
 }
 

@@ -5,4 +5,5 @@ pub enum Effect {
     SelectCategory(Option<String>),
     SelectSubCategory(Option<String>),
     SetFilterText(String),
+    RecomputeRecurring,
 }

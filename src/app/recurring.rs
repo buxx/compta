@@ -5,6 +5,16 @@ use crate::line::Lines;
 use super::effect::Effect;
 
 pub fn render<'a>(ui: &mut egui::Ui, lines: &mut Lines) -> Vec<Effect> {
+    if ui
+        .add(egui::Slider::new(
+            &mut lines.recurring_months,
+            1..=lines.months,
+        ))
+        .changed()
+    {
+        return vec![Effect::RecomputeRecurring];
+    };
+
     egui::Grid::new("lines").striped(true).show(ui, |ui| {
         for line in lines.recurring() {
             ui.label(line.date_raw());

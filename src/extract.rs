@@ -167,6 +167,8 @@ impl TryIntoLines for String {
             months = index;
         }
 
+        let recurring_months = (((months as isize) - 1).max(1)) as usize;
+
         let mut sous_categories_histogram = vec![];
         for (category, sub_category) in &sub_categories {
             let sub_category_lines = lines
@@ -213,68 +215,12 @@ impl TryIntoLines for String {
             ));
         }
 
-        let mut recurring = vec![];
-
-        for line in &lines {
-            let mut found_counter = 0;
-            let mut current_date =
-                chrono::NaiveDate::from_ymd_opt(lower_date.year(), lower_date.month(), 1).unwrap();
-            while current_date <= higher_date {
-                let month_lines = lines
-                    .iter()
-                    .filter(|l| {
-                        let mut splitted = l.date_raw().split('/');
-                        let _ = splitted.next().unwrap().parse::<u32>().unwrap();
-                        let month = splitted.next().unwrap().parse::<u32>().unwrap();
-                        let year = splitted.next().unwrap().parse::<i32>().unwrap();
-                        current_date.year() == year && current_date.month() == month
-                    })
-                    .collect::<Vec<&Line>>();
-
-                if !month_lines
-                    .iter()
-                    .filter(|l| {
-                        l.libelle_simplifie() == line.libelle_simplifie()
-                            && l.debit() == line.debit()
-                            && l.credit() == line.credit()
-                    })
-                    .collect::<Vec<&&Line>>()
-                    .is_empty()
-                {
-                    found_counter += 1;
-                }
-                current_date = current_date
-                    .checked_add_months(chrono::Months::new(1))
-                    .unwrap();
-            }
-
-            if found_counter == months {
-                recurring.push(line.clone())
-            }
-        }
-
-        let mut recurring_: Vec<Line> = vec![];
-        for line in &recurring {
-            let already = recurring_
-                .iter()
-                .find(|l| {
-                    l.libelle_simplifie() == line.libelle_simplifie()
-                        && l.debit() == line.debit()
-                        && l.credit() == line.credit()
-                })
-                .is_some();
-
-            if !already {
-                recurring_.push(line.clone());
-            }
-        }
-
-        let recurring = recurring_;
-
-        Ok(Lines::new(
+        let mut lines = Lines::new(
             name,
+            lower_date,
+            higher_date,
             lines,
-            recurring,
+            vec![],
             categories,
             sub_categories,
             categories_totals,
@@ -282,9 +228,77 @@ impl TryIntoLines for String {
             categories_histogram,
             sous_categories_histogram,
             months,
+            recurring_months,
             true,
-        ))
+        );
+
+        let recurring = extract_recuring(&lines);
+        lines.recurring = recurring;
+
+        Ok(lines)
     }
+}
+
+pub fn extract_recuring(lines: &Lines) -> Vec<Line> {
+    let mut recurring = vec![];
+
+    for line in lines.lines() {
+        let mut found_counter = 0;
+        let mut current_date =
+            chrono::NaiveDate::from_ymd_opt(lines.lower_date.year(), lines.lower_date.month(), 1)
+                .unwrap();
+        while current_date <= lines.higher_date {
+            let month_lines = lines
+                .lines()
+                .iter()
+                .filter(|l| {
+                    let mut splitted = l.date_raw().split('/');
+                    let _ = splitted.next().unwrap().parse::<u32>().unwrap();
+                    let month = splitted.next().unwrap().parse::<u32>().unwrap();
+                    let year = splitted.next().unwrap().parse::<i32>().unwrap();
+                    current_date.year() == year && current_date.month() == month
+                })
+                .collect::<Vec<&Line>>();
+
+            if !month_lines
+                .iter()
+                .filter(|l| {
+                    l.libelle_simplifie() == line.libelle_simplifie()
+                        && l.debit() == line.debit()
+                        && l.credit() == line.credit()
+                })
+                .collect::<Vec<&&Line>>()
+                .is_empty()
+            {
+                found_counter += 1;
+            }
+            current_date = current_date
+                .checked_add_months(chrono::Months::new(1))
+                .unwrap();
+        }
+
+        if found_counter >= lines.recurring_months {
+            recurring.push(line.clone())
+        }
+    }
+
+    let mut recurring_: Vec<Line> = vec![];
+    for line in &recurring {
+        let already = recurring_
+            .iter()
+            .find(|l| {
+                l.libelle_simplifie() == line.libelle_simplifie()
+                    && l.debit() == line.debit()
+                    && l.credit() == line.credit()
+            })
+            .is_some();
+
+        if !already {
+            recurring_.push(line.clone());
+        }
+    }
+
+    recurring_
 }
 
 #[cfg(test)]

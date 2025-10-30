@@ -13,7 +13,10 @@ pub mod lines;
 pub mod recurring;
 pub mod sub_categories;
 
-use crate::{extract::TryIntoLines, line::Lines};
+use crate::{
+    extract::{TryIntoLines, extract_recuring},
+    line::Lines,
+};
 
 pub struct MyApp {
     start_from: Option<PathBuf>,
@@ -119,6 +122,11 @@ impl eframe::App for MyApp {
                     }
                     Effect::ClearLines => {
                         self.lines = None;
+                    }
+                    Effect::RecomputeRecurring => {
+                        if let Some(lines) = &mut self.lines {
+                            lines.recurring = extract_recuring(lines);
+                        }
                     }
                 }
             }
