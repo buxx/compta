@@ -79,6 +79,7 @@ pub struct Lines {
     pub recurring_months: usize,
     pub recurring_approx: f32,
     pub categories_histogram_display_expenses_only: bool,
+    pub months_sums: Vec<f32>,
 }
 
 impl Lines {
@@ -120,5 +121,9 @@ impl Lines {
 
     pub fn months(&self) -> usize {
         self.months
+    }
+
+    pub fn months_sums(&self) -> &Vec<f32> {
+        &self.months_sums
     }
 }

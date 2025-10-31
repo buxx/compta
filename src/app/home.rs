@@ -23,6 +23,12 @@ pub fn render(
                         if ui.button("Clear").clicked() {
                             effects.push(Effect::ClearLines);
                         };
+
+                        ui.separator();
+
+                        for (i, sum) in lines.months_sums().iter().enumerate() {
+                            ui.label(format!("{}: {}", i, sum));
+                        }
                     });
                 }
                 None => {

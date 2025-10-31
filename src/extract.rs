@@ -215,6 +215,31 @@ impl TryIntoLines for String {
             ));
         }
 
+        let mut months_sums = vec![];
+        let mut current_date =
+            chrono::NaiveDate::from_ymd_opt(lower_date.year(), lower_date.month(), 1).unwrap();
+        while current_date <= higher_date {
+            let month_total = lines
+                .iter()
+                .filter(|l| {
+                    let mut splitted = l.date_raw().split('/');
+                    let _ = splitted.next().unwrap().parse::<u32>().unwrap();
+                    let month = splitted.next().unwrap().parse::<u32>().unwrap();
+                    let year = splitted.next().unwrap().parse::<i32>().unwrap();
+                    current_date.year() == year
+                        && current_date.month() == month
+                        && l.categorie() != "Transaction exclue"
+                })
+                .map(|l| l.credit().unwrap_or(0.0) + l.debit().unwrap_or(0.0))
+                .sum::<f32>();
+
+            months_sums.push(month_total);
+
+            current_date = current_date
+                .checked_add_months(chrono::Months::new(1))
+                .unwrap();
+        }
+
         let recurring_approx = 0.0;
         let mut lines = Lines::new(
             name,
@@ -232,6 +257,7 @@ impl TryIntoLines for String {
             recurring_months,
             recurring_approx,
             true,
+            months_sums,
         );
 
         let recurring = extract_recuring(&lines);
