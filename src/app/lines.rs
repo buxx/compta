@@ -131,6 +131,7 @@ pub fn render<'a>(
                     ui.label(RichText::new(format!("{:>.2}", current_debit)).strong());
                     ui.label(RichText::new(format!("{:>.2}", current_credit)).strong());
                     ui.end_row();
+                    ui.end_row();
                     current_debit = 0.0;
                     current_credit = 0.0;
                 }
