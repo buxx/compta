@@ -71,12 +71,12 @@ pub struct Lines {
     pub recurring: Vec<Line>,
     categories: Vec<String>,
     sub_categories: Vec<(String, String)>,
-    categories_totals: Vec<(String, f32)>,
-    sub_categories_total: Vec<(String, String, f32)>,
+    categories_totals: Vec<(String, Vec<f32>, f32, f32)>,
+    sub_categories_total: Vec<(String, String, Vec<f32>, f32, f32)>,
     categories_histogram: Vec<(String, bool, Vec<[f64; 2]>)>,
     sous_categories_histogram: Vec<(String, String, bool, Vec<[f64; 2]>)>,
     pub months_count: usize,
-    pub months: Vec<chrono::NaiveDate>,
+    pub all_months: Vec<chrono::NaiveDate>,
     pub active_months: (chrono::NaiveDate, chrono::NaiveDate),
     pub recurring_months: usize,
     pub recurring_approx: f32,
@@ -105,19 +105,19 @@ impl Lines {
         &self.sub_categories
     }
 
-    pub fn categories_totals(&self) -> &[(String, f32)] {
+    pub fn categories_totals(&self) -> &[(String, Vec<f32>, f32, f32)] {
         &self.categories_totals
     }
 
-    pub fn sub_categories_total(&self) -> &[(String, String, f32)] {
+    pub fn sub_categories_total(&self) -> &[(String, String, Vec<f32>, f32, f32)] {
         &self.sub_categories_total
     }
 
-    pub fn categories_histogram(&self) -> &Vec<(String, bool, Vec<[f64; 2]>)> {
+    pub fn categories_histogram(&self) -> &[(String, bool, Vec<[f64; 2]>)] {
         &self.categories_histogram
     }
 
-    pub fn sous_categories_histogram(&self) -> &Vec<(String, String, bool, Vec<[f64; 2]>)> {
+    pub fn sous_categories_histogram(&self) -> &[(String, String, bool, Vec<[f64; 2]>)] {
         &self.sous_categories_histogram
     }
 
@@ -125,8 +125,8 @@ impl Lines {
         self.months_count
     }
 
-    pub fn months(&self) -> &Vec<chrono::NaiveDate> {
-        &self.months
+    pub fn all_months(&self) -> &Vec<chrono::NaiveDate> {
+        &self.all_months
     }
 
     pub fn active_months(&self) -> &(chrono::NaiveDate, chrono::NaiveDate) {

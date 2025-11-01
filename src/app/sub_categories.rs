@@ -15,14 +15,16 @@ pub fn render(ui: &mut egui::Ui, lines: &mut Lines) -> Vec<Effect> {
         egui::Grid::new(format!("category_{category}"))
             .striped(true)
             .show(ui, |ui| {
-                for (category_, sub_category, total) in lines.sub_categories_total() {
+                for (category_, sub_category, months, total, average) in
+                    lines.sub_categories_total()
+                {
                     if category_ == category {
                         if ui.button("👓").clicked() {
                             effects.push(Effect::SelectSubCategory(Some(sub_category.clone())));
                         }
                         ui.label(sub_category);
                         ui.label(format!("{:>.2}", total));
-                        ui.label(format!("{:>.2}", total / lines.months_count() as f32));
+                        ui.label(format!("{:>.2}", average));
                         ui.end_row();
                     }
                 }

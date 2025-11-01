@@ -129,39 +129,43 @@ impl TryIntoLines for String {
             }
         }
 
-        let categories_totals: Vec<(String, f32)> = categories
-            .iter()
-            .map(|cat| {
-                (
-                    cat.clone(),
-                    lines
-                        .iter()
-                        .filter(|l| l.categorie() == cat)
-                        .map(|l| l.credit().unwrap_or_default() + l.debit().unwrap_or_default())
-                        .sum(),
-                )
-            })
-            .collect::<Vec<(String, f32)>>()
+        let active_months_count = months_between(&active_months.0, &active_months.1) + 1;
+        let mut categories_totals = vec![];
+        for category in &categories {
+            let sum = lines
+                .iter()
+                .filter(|l| l.categorie() == category)
+                .map(|l| l.credit().unwrap_or_default() + l.debit().unwrap_or_default())
+                .sum();
+            let average = sum / active_months_count as f32;
+
+            categories_totals.push((category.clone(), vec![], sum, average))
+        }
+        let categories_totals = categories_totals
             .into_iter()
-            .sorted_by_key(|(_, v)| (v * 100.) as i32)
-            .collect();
-        let sub_categories_total: Vec<(String, String, f32)> = sub_categories
-            .iter()
-            .map(|(cat, sub)| {
-                (
-                    cat.clone(),
-                    sub.clone(),
-                    lines
-                        .iter()
-                        .filter(|l| l.sous_categorie() == sub)
-                        .map(|l| l.credit().unwrap_or_default() + l.debit().unwrap_or_default())
-                        .sum(),
-                )
-            })
-            .collect::<Vec<(String, String, f32)>>()
+            .sorted_by_key(|(_, _, total, _)| (total * 100.) as i32)
+            .collect::<Vec<(String, Vec<f32>, f32, f32)>>();
+
+        let mut sub_categories_total = vec![];
+        for (category, sub_category) in &sub_categories {
+            let sum = lines
+                .iter()
+                .filter(|l| l.sous_categorie() == sub_category)
+                .map(|l| l.credit().unwrap_or_default() + l.debit().unwrap_or_default())
+                .sum();
+            let average = sum / active_months_count as f32;
+            sub_categories_total.push((
+                category.clone(),
+                sub_category.clone(),
+                vec![],
+                sum,
+                average,
+            ))
+        }
+        let sub_categories_total = sub_categories_total
             .into_iter()
-            .sorted_by_key(|(_, _, v)| (v * 100.) as i32)
-            .collect();
+            .sorted_by_key(|(_, _, _, total, _)| (total * 100.) as i32)
+            .collect::<Vec<(String, String, Vec<f32>, f32, f32)>>();
 
         let mut months_count = 1;
 
@@ -401,6 +405,12 @@ pub fn approx_eq_pct_ref(reference: f32, actual: f32, pct: f32) -> bool {
     (reference - actual).abs() <= tol
 }
 
+fn months_between(start: &chrono::NaiveDate, end: &chrono::NaiveDate) -> i32 {
+    let years_diff = end.year() - start.year();
+    let months_diff = end.month() as i32 - start.month() as i32;
+    years_diff * 12 + months_diff
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -415,9 +425,20 @@ mod tests {
 ";
 
     #[test]
+    fn test_months_between() {
+        assert_eq!(
+            months_between(
+                &chrono::NaiveDate::from_ymd_opt(2025, 1, 1).unwrap(),
+                &chrono::NaiveDate::from_ymd_opt(2025, 10, 1).unwrap(),
+            ),
+            9
+        )
+    }
+
+    #[test]
     fn extract_by_category() {
         // Given/When
-        let lines = RAW.to_string().into_lines().unwrap();
+        let lines = RAW.to_string().into_lines("test".to_string()).unwrap();
 
         // Then
         assert_eq!(
