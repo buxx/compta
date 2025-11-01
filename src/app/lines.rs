@@ -1,4 +1,5 @@
-use eframe::egui;
+use chrono::Datelike;
+use eframe::egui::{self, RichText};
 
 use crate::{app::scale_buttons, line::Lines};
 
@@ -63,6 +64,10 @@ pub fn render<'a>(
     ui.separator();
     ui.add_space(20.0);
 
+    let mut current_date: Option<chrono::NaiveDate> = None;
+    let mut current_debit = 0.0;
+    let mut current_credit = 0.0;
+
     egui::Grid::new("lines").striped(true).show(ui, |ui| {
         for line in lines.lines() {
             if let Some(selected_category) = selected_category {
@@ -108,6 +113,29 @@ pub fn render<'a>(
                 continue;
             }
 
+            let date = {
+                let mut splitted = line.date_raw().split('/');
+                let _ = splitted.next().unwrap().parse::<u32>().unwrap();
+                let month = splitted.next().unwrap().parse::<u32>().unwrap();
+                let year = splitted.next().unwrap().parse::<i32>().unwrap();
+                chrono::NaiveDate::from_ymd_opt(year, month, 1).unwrap()
+            };
+
+            if let Some(current_date) = current_date {
+                if date.year() != current_date.year() || date.month() != current_date.month() {
+                    ui.label("");
+                    ui.label("");
+                    ui.label("");
+                    ui.label("");
+                    ui.label("");
+                    ui.label(RichText::new(format!("{:>.2}", current_debit)).strong());
+                    ui.label(RichText::new(format!("{:>.2}", current_credit)).strong());
+                    ui.end_row();
+                    current_debit = 0.0;
+                    current_credit = 0.0;
+                }
+            }
+
             ui.label(line.date_raw());
             ui.label(line.libelle_simplifie());
             ui.label(line.libelle_operation());
@@ -124,7 +152,20 @@ pub fn render<'a>(
                     .unwrap_or("".to_string()),
             );
             ui.end_row();
+
+            current_date = Some(date);
+            current_debit += line.debit().unwrap_or(0.0);
+            current_credit += line.credit().unwrap_or(0.0);
         }
+
+        ui.label("");
+        ui.label("");
+        ui.label("");
+        ui.label("");
+        ui.label("");
+        ui.label(RichText::new(format!("{:>.2}", current_debit)).strong());
+        ui.label(RichText::new(format!("{:>.2}", current_credit)).strong());
+        ui.end_row();
     });
 
     effects
