@@ -1,4 +1,4 @@
-use eframe::egui;
+use eframe::egui::{self, RichText};
 use egui_plot::{Legend, Line, Plot, PlotPoints};
 
 use crate::{app::scale_buttons, line::Lines};
@@ -12,11 +12,25 @@ pub fn render(ui: &mut egui::Ui, lines: &mut Lines) -> Vec<Effect> {
     egui::Grid::new("categories_totals")
         .striped(true)
         .show(ui, |ui| {
+            ui.label("");
+            ui.label(RichText::new("Categorie").strong());
+            for month in &lines.active_months {
+                ui.label(RichText::new(month.format("%Y-%m").to_string()).strong());
+            }
+            ui.label(RichText::new("Total").strong());
+            ui.label(RichText::new("Moyenne").strong());
+            ui.end_row();
+
             for (category, months, total, average) in lines.categories_totals() {
                 if ui.button("👓").clicked() {
                     effects.push(Effect::SelectCategory(Some(category.clone())));
                 }
                 ui.label(category);
+
+                for month_total in months {
+                    ui.label(format!("{:>.2}", month_total));
+                }
+
                 ui.label(format!("{:>.2}", total));
                 ui.label(format!("{:>.2}", average));
                 ui.end_row();

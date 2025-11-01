@@ -92,7 +92,9 @@ impl TryIntoLines for String {
                 .checked_add_months(chrono::Months::new(1))
                 .unwrap();
         }
-        let active_months = (*months.iter().min().unwrap(), *months.iter().max().unwrap());
+        let active_months = months.clone();
+        let min_active_month = active_months.iter().min().unwrap();
+        let max_active_month = active_months.iter().max().unwrap();
 
         let lines = lines
             .into_iter()
@@ -102,7 +104,7 @@ impl TryIntoLines for String {
                 let month = splitted.next().unwrap().parse::<u32>().unwrap();
                 let year = splitted.next().unwrap().parse::<i32>().unwrap();
                 let date = chrono::NaiveDate::from_ymd_opt(year, month, 1).unwrap();
-                date >= active_months.0 && date <= active_months.1
+                &date >= min_active_month && &date <= max_active_month
             })
             .collect::<Vec<Line>>();
 
@@ -129,17 +131,43 @@ impl TryIntoLines for String {
             }
         }
 
-        let active_months_count = months_between(&active_months.0, &active_months.1) + 1;
+        let active_months_count = months_between(&min_active_month, &max_active_month) + 1;
         let mut categories_totals = vec![];
         for category in &categories {
-            let sum = lines
+            let category_lines = lines
                 .iter()
                 .filter(|l| l.categorie() == category)
+                .collect::<Vec<&Line>>();
+            let sum = category_lines
+                .iter()
                 .map(|l| l.credit().unwrap_or_default() + l.debit().unwrap_or_default())
                 .sum();
             let average = sum / active_months_count as f32;
 
-            categories_totals.push((category.clone(), vec![], sum, average))
+            let mut months_sums = vec![];
+            let mut current_date =
+                chrono::NaiveDate::from_ymd_opt(lower_date.year(), lower_date.month(), 1).unwrap();
+            while current_date <= higher_date {
+                let category_month_total = category_lines
+                    .iter()
+                    .filter(|l| {
+                        let mut splitted = l.date_raw().split('/');
+                        let _ = splitted.next().unwrap().parse::<u32>().unwrap();
+                        let month = splitted.next().unwrap().parse::<u32>().unwrap();
+                        let year = splitted.next().unwrap().parse::<i32>().unwrap();
+                        current_date.year() == year && current_date.month() == month
+                    })
+                    .map(|l| l.credit().unwrap_or(0.0) + l.debit().unwrap_or(0.0))
+                    .sum::<f32>();
+
+                months_sums.push(category_month_total);
+
+                current_date = current_date
+                    .checked_add_months(chrono::Months::new(1))
+                    .unwrap();
+            }
+
+            categories_totals.push((category.clone(), months_sums, sum, average))
         }
         let categories_totals = categories_totals
             .into_iter()
@@ -148,16 +176,43 @@ impl TryIntoLines for String {
 
         let mut sub_categories_total = vec![];
         for (category, sub_category) in &sub_categories {
-            let sum = lines
+            let sub_category_lines = lines
                 .iter()
-                .filter(|l| l.sous_categorie() == sub_category)
+                .filter(|l| l.categorie() == category && l.sous_categorie() == sub_category)
+                .collect::<Vec<&Line>>();
+            let sum = sub_category_lines
+                .iter()
                 .map(|l| l.credit().unwrap_or_default() + l.debit().unwrap_or_default())
                 .sum();
             let average = sum / active_months_count as f32;
+
+            let mut months_sums = vec![];
+            let mut current_date =
+                chrono::NaiveDate::from_ymd_opt(lower_date.year(), lower_date.month(), 1).unwrap();
+            while current_date <= higher_date {
+                let sub_category_month_total = sub_category_lines
+                    .iter()
+                    .filter(|l| {
+                        let mut splitted = l.date_raw().split('/');
+                        let _ = splitted.next().unwrap().parse::<u32>().unwrap();
+                        let month = splitted.next().unwrap().parse::<u32>().unwrap();
+                        let year = splitted.next().unwrap().parse::<i32>().unwrap();
+                        current_date.year() == year && current_date.month() == month
+                    })
+                    .map(|l| l.credit().unwrap_or(0.0) + l.debit().unwrap_or(0.0))
+                    .sum::<f32>();
+
+                months_sums.push(sub_category_month_total);
+
+                current_date = current_date
+                    .checked_add_months(chrono::Months::new(1))
+                    .unwrap();
+            }
+
             sub_categories_total.push((
                 category.clone(),
                 sub_category.clone(),
-                vec![],
+                months_sums,
                 sum,
                 average,
             ))
