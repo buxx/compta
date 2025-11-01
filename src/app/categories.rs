@@ -18,7 +18,7 @@ pub fn render(ui: &mut egui::Ui, lines: &mut Lines) -> Vec<Effect> {
                 }
                 ui.label(category);
                 ui.label(format!("{:>.2}", total));
-                ui.label(format!("{:>.2}", total / lines.months() as f32));
+                ui.label(format!("{:>.2}", total / lines.months_count() as f32));
                 ui.end_row();
             }
         });

@@ -75,11 +75,13 @@ pub struct Lines {
     sub_categories_total: Vec<(String, String, f32)>,
     categories_histogram: Vec<(String, bool, Vec<[f64; 2]>)>,
     sous_categories_histogram: Vec<(String, String, bool, Vec<[f64; 2]>)>,
-    pub months: usize,
+    pub months_count: usize,
+    pub months: Vec<chrono::NaiveDate>,
+    pub active_months: (chrono::NaiveDate, chrono::NaiveDate),
     pub recurring_months: usize,
     pub recurring_approx: f32,
     pub categories_histogram_display_expenses_only: bool,
-    pub months_sums: Vec<f32>,
+    pub months_sums: Vec<(chrono::NaiveDate, f32)>,
 }
 
 impl Lines {
@@ -119,11 +121,19 @@ impl Lines {
         &self.sous_categories_histogram
     }
 
-    pub fn months(&self) -> usize {
-        self.months
+    pub fn months_count(&self) -> usize {
+        self.months_count
     }
 
-    pub fn months_sums(&self) -> &Vec<f32> {
+    pub fn months(&self) -> &Vec<chrono::NaiveDate> {
+        &self.months
+    }
+
+    pub fn active_months(&self) -> &(chrono::NaiveDate, chrono::NaiveDate) {
+        &self.active_months
+    }
+
+    pub fn months_sums(&self) -> &Vec<(chrono::NaiveDate, f32)> {
         &self.months_sums
     }
 }

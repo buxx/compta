@@ -40,6 +40,72 @@ impl TryIntoLines for String {
                 credit.replace(",", ".").parse::<f32>().ok(),
             ));
         }
+
+        let dates = lines
+            .iter()
+            .map(|l| {
+                let mut splitted = l.date_raw().split('/');
+                let day = splitted.next().unwrap().parse::<u32>().unwrap();
+                let month = splitted.next().unwrap().parse::<u32>().unwrap();
+                let year = splitted.next().unwrap().parse::<i32>().unwrap();
+                chrono::NaiveDate::from_ymd_opt(year, month, day).unwrap()
+            })
+            .collect::<Vec<chrono::NaiveDate>>();
+        let lower_date = dates
+            .iter()
+            .sorted()
+            .collect::<Vec<&chrono::NaiveDate>>()
+            .first()
+            .copied()
+            .unwrap()
+            .clone();
+        let higher_date = dates
+            .iter()
+            .sorted()
+            .collect::<Vec<&chrono::NaiveDate>>()
+            .last()
+            .copied()
+            .unwrap()
+            .clone();
+
+        let mut months_sums = vec![];
+        let mut months = vec![];
+        let mut current_date =
+            chrono::NaiveDate::from_ymd_opt(lower_date.year(), lower_date.month(), 1).unwrap();
+        while current_date <= higher_date {
+            let month_total = lines
+                .iter()
+                .filter(|l| {
+                    let mut splitted = l.date_raw().split('/');
+                    let _ = splitted.next().unwrap().parse::<u32>().unwrap();
+                    let month = splitted.next().unwrap().parse::<u32>().unwrap();
+                    let year = splitted.next().unwrap().parse::<i32>().unwrap();
+                    current_date.year() == year
+                        && current_date.month() == month
+                        && l.categorie() != "Transaction exclue"
+                })
+                .map(|l| l.credit().unwrap_or(0.0) + l.debit().unwrap_or(0.0))
+                .sum::<f32>();
+
+            months.push(current_date);
+            current_date = current_date
+                .checked_add_months(chrono::Months::new(1))
+                .unwrap();
+        }
+        let active_months = (*months.iter().min().unwrap(), *months.iter().max().unwrap());
+
+        let lines = lines
+            .into_iter()
+            .filter(|l| {
+                let mut splitted = l.date_raw().split('/');
+                let _ = splitted.next().unwrap().parse::<u32>().unwrap();
+                let month = splitted.next().unwrap().parse::<u32>().unwrap();
+                let year = splitted.next().unwrap().parse::<i32>().unwrap();
+                let date = chrono::NaiveDate::from_ymd_opt(year, month, 1).unwrap();
+                date >= active_months.0 && date <= active_months.1
+            })
+            .collect::<Vec<Line>>();
+
         let categories: Vec<String> = lines
             .iter()
             .map(|l| l.categorie().to_string())
@@ -97,33 +163,7 @@ impl TryIntoLines for String {
             .sorted_by_key(|(_, _, v)| (v * 100.) as i32)
             .collect();
 
-        let dates = lines
-            .iter()
-            .map(|l| {
-                let mut splitted = l.date_raw().split('/');
-                let day = splitted.next().unwrap().parse::<u32>().unwrap();
-                let month = splitted.next().unwrap().parse::<u32>().unwrap();
-                let year = splitted.next().unwrap().parse::<i32>().unwrap();
-                chrono::NaiveDate::from_ymd_opt(year, month, day).unwrap()
-            })
-            .collect::<Vec<chrono::NaiveDate>>();
-        let lower_date = dates
-            .iter()
-            .sorted()
-            .collect::<Vec<&chrono::NaiveDate>>()
-            .first()
-            .copied()
-            .unwrap()
-            .clone();
-        let higher_date = dates
-            .iter()
-            .sorted()
-            .collect::<Vec<&chrono::NaiveDate>>()
-            .last()
-            .copied()
-            .unwrap()
-            .clone();
-        let mut months = 1;
+        let mut months_count = 1;
 
         let mut categories_histogram = vec![];
         for category in &categories {
@@ -164,10 +204,10 @@ impl TryIntoLines for String {
                 .is_sign_positive();
 
             categories_histogram.push((category.clone(), positive, values));
-            months = index;
+            months_count = index;
         }
 
-        let recurring_months = (((months as isize) - 1).max(1)) as usize;
+        let recurring_months = (((months_count as isize) - 1).max(1)) as usize;
 
         let mut sous_categories_histogram = vec![];
         for (category, sub_category) in &sub_categories {
@@ -215,7 +255,6 @@ impl TryIntoLines for String {
             ));
         }
 
-        let mut months_sums = vec![];
         let mut current_date =
             chrono::NaiveDate::from_ymd_opt(lower_date.year(), lower_date.month(), 1).unwrap();
         while current_date <= higher_date {
@@ -233,8 +272,7 @@ impl TryIntoLines for String {
                 .map(|l| l.credit().unwrap_or(0.0) + l.debit().unwrap_or(0.0))
                 .sum::<f32>();
 
-            months_sums.push(month_total);
-
+            months_sums.push((current_date.clone(), month_total));
             current_date = current_date
                 .checked_add_months(chrono::Months::new(1))
                 .unwrap();
@@ -253,7 +291,9 @@ impl TryIntoLines for String {
             sub_categories_total,
             categories_histogram,
             sous_categories_histogram,
+            months_count,
             months,
+            active_months,
             recurring_months,
             recurring_approx,
             true,

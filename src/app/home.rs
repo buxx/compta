@@ -26,9 +26,13 @@ pub fn render(
 
                         ui.separator();
 
-                        for (i, sum) in lines.months_sums().iter().enumerate() {
-                            ui.label(format!("{}: {}", i, sum));
-                        }
+                        egui::Grid::new("lines").striped(true).show(ui, |ui| {
+                            for (date, sum) in lines.months_sums() {
+                                ui.label(date.format("%Y-%m").to_string());
+                                ui.label(format!("{sum}"));
+                                ui.end_row();
+                            }
+                        });
                     });
                 }
                 None => {

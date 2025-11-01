@@ -8,7 +8,7 @@ pub fn render<'a>(ui: &mut egui::Ui, lines: &mut Lines) -> Vec<Effect> {
     if ui
         .add(egui::Slider::new(
             &mut lines.recurring_months,
-            1..=lines.months,
+            1..=lines.months_count,
         ))
         .changed()
     {
