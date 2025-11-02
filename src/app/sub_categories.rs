@@ -42,6 +42,19 @@ pub fn render(ui: &mut egui::Ui, lines: &mut Lines) -> Vec<Effect> {
                         ui.end_row();
                     }
                 }
+
+                ui.label("");
+                ui.label("");
+                for (category_, values, _, _) in lines.categories_totals() {
+                    if category_ == category {
+                        for value in values {
+                            ui.label(RichText::new(format!("{:>.2}", value)).strong());
+                        }
+                    }
+                }
+                ui.label("");
+                ui.label("");
+                ui.end_row();
             });
 
         ui.separator();

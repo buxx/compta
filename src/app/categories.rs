@@ -35,6 +35,15 @@ pub fn render(ui: &mut egui::Ui, lines: &mut Lines) -> Vec<Effect> {
                 ui.label(format!("{:>.2}", average));
                 ui.end_row();
             }
+
+            ui.label("");
+            ui.label("");
+            for (_, total) in lines.months_sums() {
+                ui.label(RichText::new(format!("{:>.2}", total)).strong());
+            }
+            ui.label("");
+            ui.label("");
+            ui.end_row();
         });
 
     ui.separator();
