@@ -16,7 +16,7 @@ pub fn render<'a>(
     effects.extend(scale_buttons(ui));
 
     ui.horizontal_wrapped(|ui| {
-        egui::ComboBox::from_label("CategoryFilter")
+        egui::ComboBox::from_label("Categorie")
             .selected_text(selected_category.clone().unwrap_or_default())
             .show_ui(ui, |ui| {
                 let mut selected_category_ = selected_category.clone();
@@ -31,17 +31,27 @@ pub fn render<'a>(
 
         ui.separator();
 
-        egui::ComboBox::from_label("SubCategoryFilter")
+        egui::ComboBox::from_label("Sous catégorie")
             .selected_text(selected_sub_category.clone().unwrap_or_default())
             .show_ui(ui, |ui| {
                 let mut sub_selected_category_ = selected_sub_category.clone();
                 ui.selectable_value(&mut sub_selected_category_, None, "".to_string());
-                for (_, sub_category) in lines.sub_categories() {
-                    ui.selectable_value(
-                        &mut sub_selected_category_,
-                        Some(sub_category.clone()),
-                        sub_category,
-                    );
+                for (category, sub_category) in lines.sub_categories() {
+                    if let Some(selected_category) = selected_category {
+                        if selected_category == category {
+                            ui.selectable_value(
+                                &mut sub_selected_category_,
+                                Some(sub_category.clone()),
+                                sub_category,
+                            );
+                        }
+                    } else {
+                        ui.selectable_value(
+                            &mut sub_selected_category_,
+                            Some(sub_category.clone()),
+                            sub_category,
+                        );
+                    }
                 }
                 if &sub_selected_category_ != selected_sub_category {
                     effects.push(Effect::SelectSubCategory(sub_selected_category_.clone()))
