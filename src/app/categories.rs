@@ -38,21 +38,24 @@ pub fn render(ui: &mut egui::Ui, lines: &mut Lines) -> Vec<Effect> {
         });
 
     ui.separator();
-    ui.checkbox(
-        &mut lines.categories_histogram_display_expenses_only,
-        "Dépenses uniquement",
-    );
 
-    let plot = Plot::new("Historique").legend(Legend::default());
+    ui.collapsing("Histogramme", |ui| {
+        ui.checkbox(
+            &mut lines.categories_histogram_display_expenses_only,
+            "Dépenses uniquement",
+        );
 
-    let _ = plot.show(ui, |plot_ui| {
-        for (category, positive, values) in lines.categories_histogram() {
-            if (!lines.categories_histogram_display_expenses_only
-                || (lines.categories_histogram_display_expenses_only && !positive))
-            {
-                plot_ui.line(Line::new(category, PlotPoints::from(values.clone())));
+        let plot = Plot::new("Historique").legend(Legend::default());
+
+        let _ = plot.show(ui, |plot_ui| {
+            for (category, positive, values) in lines.categories_histogram() {
+                if (!lines.categories_histogram_display_expenses_only
+                    || (lines.categories_histogram_display_expenses_only && !positive))
+                {
+                    plot_ui.line(Line::new(category, PlotPoints::from(values.clone())));
+                }
             }
-        }
+        });
     });
 
     effects
