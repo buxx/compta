@@ -1,5 +1,6 @@
 use eframe::egui::{self, Align, Layout};
 use egui_file_dialog::FileDialog;
+use egui_plot::{Legend, Line, Plot, PlotPoints};
 
 use crate::line::Lines;
 
@@ -32,6 +33,31 @@ pub fn render(
                                 ui.label(format!("{sum}"));
                                 ui.end_row();
                             }
+                        });
+
+                        ui.separator();
+
+                        ui.collapsing("Histogramme", |ui| {
+                            ui.checkbox(
+                                &mut lines.categories_histogram_display_expenses_only,
+                                "Dépenses uniquement",
+                            );
+
+                            let plot = Plot::new("Historique").legend(Legend::default());
+
+                            let _ = plot.show(ui, |plot_ui| {
+                                plot_ui.line(Line::new(
+                                    "Histogramme",
+                                    PlotPoints::from(
+                                        lines
+                                            .months_sums()
+                                            .iter()
+                                            .enumerate()
+                                            .map(|(i, (_, v))| [i as f64, *v as f64])
+                                            .collect::<Vec<[f64; 2]>>(),
+                                    ),
+                                ));
+                            });
                         });
                     });
                 }
